@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KOMPAS100 Signal Engine — Breakout Hybrid</title>
+<style>
+:root{--bg:#f4f5f8;--cd:#fff;--tx:#151a24;--mu:#6b7585;--bd:#e1e4ea;--ac:#c98a00;--ok:#0a8f4e;--no:#d12b3a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0f1c;--cd:#121a2e;--tx:#e8ecf4;--mu:#8b96ab;--bd:#222c45;--ac:#f5b73b;--ok:#2fd08a;--no:#ff6b78}}
+:root[data-theme="dark"]{--bg:#0a0f1c;--cd:#121a2e;--tx:#e8ecf4;--mu:#8b96ab;--bd:#222c45;--ac:#f5b73b;--ok:#2fd08a;--no:#ff6b78}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.app{display:flex;min-height:100vh}nav{width:210px;padding:18px 12px;border-right:1px solid var(--bd);display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+nav b{color:var(--ac);font-size:17px;margin:0 8px 12px}nav button{background:none;border:1px solid transparent;color:var(--mu);text-align:left;padding:9px 12px;border-radius:9px;font:inherit;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac);background:rgba(245,183,59,.08)}
+main{flex:1;min-width:0;padding:18px;max-width:1150px}section{display:none}section.on{display:block}
+h2{margin:0 0 12px;font-size:18px}.c{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}label{display:block;font-size:12px;color:var(--mu)}
+input[type=number],input[type=date]{width:100%;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+button.p,.f{background:var(--ac);color:#111;border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;display:inline-block}
+.k{font-size:24px;font-weight:700}.k small{display:block;font-size:12px;color:var(--mu);font-weight:400}
+.b{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#111}.pa{background:var(--ok)}.fa{background:var(--no)}
+.sc{overflow-x:auto;max-height:420px;overflow-y:auto}table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{padding:5px 8px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--cd);color:var(--mu)}td:first-child,th:first-child{text-align:left}
+canvas{width:100%;height:300px;display:block}.mu{color:var(--mu);font-size:12px}.pos{color:var(--ok)}.neg{color:var(--no)}
+@media(max-width:760px){.app{flex-direction:column}nav{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--bd)}nav b{width:100%;margin-bottom:4px}}
+</style></head><body><div class="app">
+<nav><b>◆ KOMPAS100 ENGINE</b>
+<button data-v="setup" class="on">Pengaturan</button><button data-v="dash">Dashboard</button><button data-v="sig">Sinyal &amp; Posisi</button><button data-v="trd">Riwayat Trade</button><button data-v="eq">Equity Curve</button>
+<button id="th" style="margin-top:auto">Tema terang/gelap</button></nav>
+<main>
+<section id="setup" class="on"><h2>Pengaturan</h2>
+<div class="c"><b>1. Data riil (tanpa data demo)</b><p class="mu">Unggah CSV harian per saham (nama file = kode, mis. BBCA.csv, format Yahoo Finance) atau satu CSV gabungan (Date, Ticker, Open, High, Low, Close, Adj Close).</p>
+<label class="f" style="cursor:pointer">Pilih file CSV (banyak file)<input id="fi" type="file" accept=".csv,.txt" multiple hidden></label><span id="st" class="mu"> Belum ada data.</span>
+<div style="margin-top:12px"><label>Keanggotaan historis KOMPAS 100 (CSV: Ticker, Start, End; End kosong = masih anggota)</label><label class="f" style="cursor:pointer">Pilih file keanggotaan<input id="fm" type="file" accept=".csv,.txt" hidden></label><span id="sm" class="mu"> Belum dimuat: semua saham dianggap anggota sepanjang periode.</span></div></div>
+<div class="c"><b>2. Parameter</b><div class="g" style="margin-top:8px">
+<div><label>Breakout high (hari)</label><input type="number" id="N" value="55"></div><div><label>Breakdown low (hari)</label><input type="number" id="M" value="20"></div>
+<div><label>Filter tren SMA (hari)</label><input type="number" id="T" value="100"></div><div><label>Stop-loss (%)</label><input type="number" id="SL" value="8" step="0.5"></div>
+<div><label>Jumlah slot posisi</label><input type="number" id="S" value="10"></div><div><label>Modal awal (Rp)</label><input type="number" id="CAP" value="1000000000"></div>
+<div><label>Fee beli (%)</label><input type="number" id="FB" value="0.15" step="0.01"></div><div><label>Fee jual (%)</label><input type="number" id="FS" value="0.25" step="0.01"></div>
+<div><label>Mulai backtest</label><input type="date" id="D0"></div><div><label>Akhir backtest (kosong = data terakhir)</label><input type="date" id="D1"></div></div>
+<div style="margin-top:12px"><button class="p" id="run">Jalankan Backtest</button></div></div>
+<div class="c mu"><b style="color:var(--tx)">Aturan.</b> Sinyal dihitung di close hari t, order diisi di open t+1. Entry: close &gt; high tertinggi N hari sebelumnya dan close &gt; SMA tren; bila slot penuh, kandidat diurutkan dari breakout terkuat. Exit: close ≤ entry × (1 − SL), close &lt; low terendah M hari (breakdown), atau saham keluar KOMPAS 100. Re-entry: setelah exit, tidak ada entri di bulan yang sama; di hari bursa pertama bulan berikutnya masuk lagi jika close &gt; SMA tren. Modal bersama: tiap posisi ≈ ekuitas ÷ jumlah slot. Win rate = trade tertutup untung (bersih fee) ÷ total trade tertutup; CAGR dari kurva ekuitas harian.</div></section>
+<section id="dash"><h2>Dashboard</h2><div class="c"><div class="g" id="kp"></div></div><div class="c"><b>Peta Performa per saham</b><div class="sc"><table id="tk"></table></div></div></section>
+<section id="sig"><h2>Sinyal &amp; Posisi</h2><div class="c"><b id="sd">Pending besok</b><div class="sc"><table id="pd"></table></div></div><div class="c"><b>Posisi aktif</b><div class="sc"><table id="op"></table></div></div></section>
+<section id="trd"><h2>Riwayat Trade</h2><div class="c"><div class="sc"><table id="tr"></table></div></div></section>
+<section id="eq"><h2>Equity Curve</h2><div class="c"><canvas id="cv"></canvas><div class="mu">Garis putus-putus = modal awal.</div></div></section>
+</main></div>
+<script>
+const $=i=>document.getElementById(i);let DATA={},MEM=null;
+const fmt=(x,d=2)=>isFinite(x)?x.toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d}):'-',dd=t=>new Date(t).toISOString().slice(0,10),num=s=>parseFloat(String(s).replace(/["\s]/g,''));
+function show(v){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===v));document.querySelectorAll('nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='eq'&&window.PE)draw(PE,PC)}
+document.querySelectorAll('nav button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
+$('th').onclick=()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'};
+function st(m,e){$('st').textContent=' '+m;$('st').style.color=e?'var(--no)':''}
+function parse(txt,fname){const L=txt.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());if(L.length<2)return;
+const dl=(L[0].split(';').length>L[0].split(',').length)?';':',';const H=L[0].split(dl).map(x=>x.replace(/"/g,'').trim().toLowerCase()),ix=n=>H.findIndex(h=>h===n);
+const iD=H.findIndex(h=>h==='date'||h==='tanggal'),iO=ix('open'),iH=ix('high'),iL=ix('low'),iC=ix('close'),iA=H.findIndex(h=>h==='adj close'||h==='adj_close'),iT=H.findIndex(h=>['ticker','symbol','kode'].includes(h));
+if([iD,iO,iH,iL,iC].some(i=>i<0)){st('Kolom wajib tidak ditemukan di '+fname,1);return}
+const base=fname.replace(/\.[^.]+$/,'').replace(/\.JK$/i,'').toUpperCase();
+for(let r=1;r<L.length;r++){const p=L[r].split(dl).map(x=>x.replace(/"/g,'').trim());const t=iT>=0?p[iT].replace(/\.JK$/i,'').toUpperCase():base,dt=Date.parse(p[iD]);
+let o=num(p[iO]),h=num(p[iH]),l=num(p[iL]),c=num(p[iC]);if(![dt,o,h,l,c].every(isFinite)||c<=0)continue;
+if(iA>=0){const a=num(p[iA]);if(isFinite(a)&&a>0){const f=a/c;o*=f;h*=f;l*=f;c=a}}(DATA[t]=DATA[t]||[]).push({t:dt,o,h,l,c})}}
+$('fi').onchange=async e=>{DATA={};for(const f of e.target.files)parse(await f.text(),f.name);for(const k in DATA)DATA[k].sort((a,b)=>a.t-b.t);const n=Object.keys(DATA).length;if(n)st(n+' saham dimuat')};
+$('fm').onchange=async e=>{const f=e.target.files[0];if(!f)return;const L=(await f.text()).replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());MEM={};let n=0;
+for(let r=1;r<L.length;r++){const p=L[r].split(/[;,]/).map(x=>x.replace(/"/g,'').trim()),t=p[0].replace(/\.JK$/i,'').toUpperCase(),s=Date.parse(p[1]),en=p[2]?Date.parse(p[2]):Infinity;if(!t||!isFinite(s))continue;(MEM[t]=MEM[t]||[]).push([s,en]);n++}
+$('sm').textContent=' '+n+' periode keanggotaan dimuat.'};
+const inM=(k,t)=>!MEM||(MEM[k]||[]).some(([s,e])=>t>=s&&t<=e);
+function sma(a,n){const r=Array(a.length).fill(NaN);let s=0;for(let i=0;i<a.length;i++){s+=a[i];if(i>=n)s-=a[i-n];if(i>=n-1)r[i]=s/n}return r}
+const mk=t=>{const d=new Date(t);return d.getUTCFullYear()*12+d.getUTCMonth()};
+$('run').onclick=()=>{const ks=Object.keys(DATA);if(!ks.length){show('setup');st('Unggah data CSV riil terlebih dahulu.',1);return}
+const P={N:+$('N').value,M:+$('M').value,T:+$('T').value,sl:+$('SL').value/100,cap:+$('CAP').value,fb:+$('FB').value/100,fs:+$('FS').value/100,S:+$('S').value,d0:$('D0').value?Date.parse($('D0').value):0,d1:$('D1').value?Date.parse($('D1').value):Infinity};
+const X={};ks.forEach(k=>{const r=DATA[k].filter(x=>x.t<=P.d1),n=r.length;if(n<P.T+2)return;const c=r.map(x=>x.c),T=sma(c,P.T),HH=Array(n).fill(NaN),LL=Array(n).fill(NaN),idx=new Map();
+for(let i=0;i<n;i++){idx.set(r[i].t,i);if(i>=P.N){let h=0;for(let j=i-P.N;j<i;j++)h=Math.max(h,r[j].h);HH[i]=h}if(i>=P.M){let l=1e18;for(let j=i-P.M;j<i;j++)l=Math.min(l,r[j].l);LL[i]=l}}X[k]={r,T,HH,LL,idx}});
+const ad=[...new Set(Object.keys(X).flatMap(k=>X[k].r.map(x=>x.t)))].sort((a,b)=>a-b);let s0=P.d0?ad.findIndex(t=>t>=P.d0):0;if(s0<0)s0=0;
+let cash=P.cap,pos={},exM={},pend={},eq=[],tr=[],last={},ord={sell:[],buy:[]};
+for(let q=s0;q<ad.length;q++){const t=ad[q];
+ord.sell.forEach(({k,why})=>{const p=pos[k],i=X[k].idx.get(t);if(!p||i===undefined)return;const px=X[k].r[i].o,pr=p.sh*px*(1-P.fs);cash+=pr;tr.push({tk:k,type:p.type,ed:p.ed,xd:t,ep:p.ep,xp:px,why,pnl:pr-p.cost,ret:pr/p.cost-1,days:Math.round((t-p.ed)/864e5)});delete pos[k];exM[k]=mk(t);pend[k]=1});
+let eo=cash;for(const k in pos)eo+=pos[k].sh*(last[k]||pos[k].ep);
+ord.buy.forEach(({k,type})=>{if(Object.keys(pos).length>=P.S||pos[k])return;const i=X[k].idx.get(t);if(i===undefined)return;const px=X[k].r[i].o,q2=Math.floor(Math.min(eo/P.S,cash)/(px*(1+P.fb))/100)*100;if(q2<=0)return;const cost=q2*px*(1+P.fb);cash-=cost;pos[k]={sh:q2,ep:px,ed:t,cost,type};delete pend[k]});
+for(const k in X){const i=X[k].idx.get(t);if(i!==undefined)last[k]=X[k].r[i].c}let e=cash;for(const k in pos)e+=pos[k].sh*last[k];eq.push({t,v:e});
+const n2=ad[q+1]===undefined?t:ad[q+1];ord={sell:[],buy:[]};
+for(const k in pos){const i=X[k].idx.get(t);if(i===undefined)continue;const c=X[k].r[i].c;if(!inM(k,n2))ord.sell.push({k,why:'Keluar indeks'});else if(c<=pos[k].ep*(1-P.sl))ord.sell.push({k,why:'Stop-loss'});else if(c<X[k].LL[i])ord.sell.push({k,why:'Breakdown'})}
+const cd=[];for(const k in X){if(pos[k])continue;const i=X[k].idx.get(t);if(i===undefined||!inM(k,n2)||mk(n2)===exM[k])continue;const c=X[k].r[i].c,T=X[k].T[i],H=X[k].HH[i];if(!isFinite(T)||!isFinite(H))continue;
+if(c>H&&c>T)cd.push({k,type:'Breakout',sc:c/H-1,c});else if(pend[k]&&mk(n2)!==mk(t)&&c>T)cd.push({k,type:'Re-entry',sc:c/T-1,c})}
+cd.sort((a,b)=>b.sc-a.sc);ord.buy=cd}
+if(!eq.length){st('Data tidak cukup untuk periode ini.',1);show('setup');return}
+const end=eq[eq.length-1].v,yrs=(eq[eq.length-1].t-eq[0].t)/(365.25*864e5),cagr=Math.pow(end/P.cap,1/yrs)-1;let pk=0,mdd=0;eq.forEach(x=>{pk=Math.max(pk,x.v);mdd=Math.min(mdd,x.v/pk-1)});
+const W=tr.filter(x=>x.pnl>0),Lz=tr.filter(x=>x.pnl<=0),wr=tr.length?W.length/tr.length:NaN,gp=W.reduce((a,x)=>a+x.pnl,0),gl=-Lz.reduce((a,x)=>a+x.pnl,0),av=a=>a.length?a.reduce((s,x)=>s+x.ret,0)/a.length*100:NaN;
+const bd=ok=>`<span class="b ${ok?'pa':'fa'}">${ok?'LULUS':'BELUM'}</span>`;
+$('kp').innerHTML=[[fmt(cagr*100)+'%','CAGR (standar &gt; 10%) '+bd(cagr>0.10)],[fmt(wr*100)+'%','Win rate (standar ≥ 50%) '+bd(wr>=0.5)],[fmt(end/P.cap*100-100)+'%','Total return'],[fmt(mdd*100)+'%','Max drawdown'],[fmt(gl?gp/gl:NaN),'Profit factor'],['+'+fmt(av(W))+'%','Rata-rata trade menang'],[fmt(av(Lz))+'%','Rata-rata trade kalah'],[tr.length+' ('+W.length+' M / '+Lz.length+' K)','Trade tertutup'],[Object.keys(pos).length+' / '+P.S,'Slot terpakai'],[Object.keys(X).length+' saham, '+fmt(yrs,1)+' thn','Cakupan data']].map(([a,b])=>`<div class="k">${a}<small>${b}</small></div>`).join('');
+const by={};tr.forEach(x=>{const o=by[x.tk]=by[x.tk]||{n:0,w:0,p:0};o.n++;o.w+=x.pnl>0;o.p+=x.pnl});
+$('tk').innerHTML='<tr><th>Saham</th><th>Trade</th><th>Win rate</th><th>P/L (Rp)</th></tr>'+Object.entries(by).sort((a,b)=>b[1].p-a[1].p).map(([k,o])=>`<tr><td>${k}</td><td>${o.n}</td><td>${fmt(o.w/o.n*100,0)}%</td><td class="${o.p>=0?'pos':'neg'}">${fmt(o.p,0)}</td></tr>`).join('');
+const lt=eq[eq.length-1].t,free=P.S-Object.keys(pos).length+ord.sell.length;
+$('sd').textContent='Pending untuk open hari bursa berikutnya (per data '+dd(lt)+')';
+$('pd').innerHTML='<tr><th>Aksi</th><th>Saham</th><th>Jenis / Alasan</th><th>Status</th></tr>'+ord.sell.map(s=>`<tr><td class="neg">JUAL</td><td>${s.k}</td><td>${s.why}</td><td>Eksekusi open besok</td></tr>`).join('')+ord.buy.map((b,j)=>`<tr><td class="pos">BELI</td><td>${b.k}</td><td>${b.type}</td><td>${j<free?'Masuk slot':'Antre (slot penuh)'}</td></tr>`).join('')||'';
+$('op').innerHTML='<tr><th>Saham</th><th>Jenis</th><th>Entry</th><th>Harga</th><th>Terakhir</th><th>P/L</th><th>Level SL</th></tr>'+Object.keys(pos).map(k=>{const p=pos[k],r=last[k]/p.ep-1;return`<tr><td>${k}</td><td>${p.type}</td><td>${dd(p.ed)}</td><td>${fmt(p.ep,0)}</td><td>${fmt(last[k],0)}</td><td class="${r>=0?'pos':'neg'}">${fmt(r*100)}%</td><td>${fmt(p.ep*(1-P.sl),0)}</td></tr>`}).join('');
+$('tr').innerHTML='<tr><th>Saham</th><th>Jenis</th><th>Entry</th><th>Harga</th><th>Exit</th><th>Harga</th><th>Alasan</th><th>Hari</th><th>Return</th></tr>'+tr.slice().reverse().map(x=>`<tr><td>${x.tk}</td><td>${x.type}</td><td>${dd(x.ed)}</td><td>${fmt(x.ep,0)}</td><td>${dd(x.xd)}</td><td>${fmt(x.xp,0)}</td><td>${x.why}</td><td>${x.days}</td><td class="${x.pnl>0?'pos':'neg'}">${fmt(x.ret*100)}%</td></tr>`).join('');
+window.PE=eq;window.PC=P.cap;show('dash')};
+function draw(pe,cap){const cv=$('cv'),r=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*r;cv.height=h*r;const g=cv.getContext('2d');g.scale(r,r);const cs=getComputedStyle(document.documentElement);
+const mn=Math.min(cap,...pe.map(x=>x.v)),mx=Math.max(cap,...pe.map(x=>x.v)),x0=pe[0].t,x1=pe[pe.length-1].t,X=t=>8+(t-x0)/(x1-x0||1)*(w-16),Y=v=>h-18-(v-mn)/(mx-mn||1)*(h-30);
+g.strokeStyle=cs.getPropertyValue('--bd');g.setLineDash([4,4]);g.beginPath();g.moveTo(8,Y(cap));g.lineTo(w-8,Y(cap));g.stroke();g.setLineDash([]);
+g.strokeStyle=cs.getPropertyValue('--ac');g.lineWidth=2;g.beginPath();pe.forEach((p,i)=>i?g.lineTo(X(p.t),Y(p.v)):g.moveTo(X(p.t),Y(p.v)));g.stroke();
+g.fillStyle=cs.getPropertyValue('--mu');g.font='11px system-ui';g.fillText(dd(x0),8,h-3);g.fillText(dd(x1),w-8-g.measureText(dd(x1)).width,h-3)}
+</script></body></html>
